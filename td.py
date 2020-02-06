@@ -8,7 +8,7 @@ from household import get_coh, constrained, backward_iterate_olg
 
 def td_olg(paths_trans, params, pi_trans, D0, disp=False):
     """
-    Compute the transitonal dynamics for a given path of the interest rate.
+    Compute the transitional dynamics for a given path of the interest rate.
 
     Parameters
     ----------

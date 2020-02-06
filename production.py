@@ -1,11 +1,9 @@
-
-
 def f(k, l, alpha):
     """Production function (eta=1 for Cobb Douglas otherwise CES). Zstar must imply Y=1 in steady-state."""
     return k ** alpha * l ** (1 - alpha)
 
 
-def fk(k, alpha, l = 1.0):
+def fk(k, alpha, l=1.0):
     """Returns marginal product of capital."""
     return alpha * f(k, l, alpha) / k
 
@@ -24,7 +22,6 @@ def ss_production(r, alpha, delta):
     K_L = (alpha / (r + delta)) ** (1 / (1 - alpha))
     w = fl(K_L, alpha)
     return w, K_L
-
 
 
 def production_agg(alpha, r, delta):

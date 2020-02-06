@@ -4,7 +4,8 @@ from demographics import pop_stationary
 
 """Model parameters"""
 
-def set_parameters(r = 0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, Tw=20, Tr=65, T=100,  N_eps=7, N_a=200, amax=1000, n=0.02):
+def set_parameters(r=0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, Tw=20, Tr=65, T=100,  N_eps=7, N_a=200, amax=1000, n=0.02):
+    """Defines the main parameters of the model."""
     params = dict()
 
     # MODEL AGES
@@ -26,8 +27,8 @@ def set_parameters(r = 0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, Tw=20, Tr=65, 
          0.97985243, 0.97817818, 0.97613982, 0.97395495, 0.97179702, 0.96951054, 0.96698265, 0.96399526, 0.95999319,
          0.95463326, 0.94802055, 0.94049785, 0.93241941, 0.92402846, 0.91541236, 0.90647692, 0.89714784, 0.88752895,
          0.87705071, 0.86563134, 0.85318403, 0.84041459, 0.8279652, 0.81597948, 0.80466526, 0.79439827])
-    params['n'] = n
-    params['pi'] = pop_stationary(n, params['phi'], T=params['T'])
+    params['n'] = n  # Population growth rate
+    params['pi'] = pop_stationary(n, params['phi'], T=params['T'])  # Stationary population distribution
 
     # INTEREST RATE
     params['r'] = r
@@ -37,15 +38,15 @@ def set_parameters(r = 0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, Tw=20, Tr=65, 
     params['delta'] = 0.06  # Depreciation rate
 
     # PREFERENCES
-    params['sigma'] = sigma  # *Inverse* elasticity of substitution
+    params['sigma'] = sigma  # Inverse elasticity of substitution
     params['beta'] = beta  # Subjective discount factor
 
-    # INCOME PROCESS
+    # LABOR SUPPLY PROFILE
     params['h'] = np.zeros((params['T']+1))
     params['h'][Tw:Tr] = -3 + 50 * params['jvec'][Tw:Tr] - 0.5 * params['jvec'][Tw:Tr] ** 2
     params['h'] = params['h'] / np.sum(params['pi'] * params['h'])
 
-    # MASS OF RETIREES AND WORKES
+    # MASS OF RETIREES AND WORKERS
     iret = 1 * (params['jvec'] >= params['Tr'])
     params['retirees'] = np.sum(params['pi'] * iret)
     params['workers'] = np.sum(params['pi'] * params['h'] * (1-iret))
@@ -284,12 +285,9 @@ def agrid(amax, N, amin=0):
 
 @njit
 def within_tolerance(x1, x2, tol):
-    """
-    Efficiently test max(abs(x1-x2)) <= tol for arrays of same dimensions x1, x2
-    """
+    """Efficiently test max(abs(x1-x2)) <= tol for arrays of same dimensions x1, x2."""
     y1 = x1.ravel()
     y2 = x2.ravel()
-
     for i in range(y1.shape[0]):
         if np.abs(y1[i] - y2[i]) > tol:
             return False
@@ -297,9 +295,7 @@ def within_tolerance(x1, x2, tol):
 
 
 def stationary(Pi, pi_seed=None, tol=1E-11, maxit=10_000):
-    """
-    Find invariant distribution of a Markov chain by iteration
-    """
+    """Find invariant distribution of a Markov chain by iteration."""
     if pi_seed is None:
         pi = np.ones(Pi.shape[0]) / Pi.shape[0]
     else:
@@ -318,10 +314,7 @@ def stationary(Pi, pi_seed=None, tol=1E-11, maxit=10_000):
 
 
 def make_path(x, T):
-    """
-    Takes in x as either a number, a vector or a matrix, turning it into a path.
-
-    """
+    """Takes in x as either a number, a vector or a matrix, turning it into a path."""
     x = np.asarray(x)
     if x.ndim <= 1:
         return np.tile(x, (T, 1))

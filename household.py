@@ -10,8 +10,7 @@ def household_ss_olg(params, w, tau, d):
 
     # allocate arrays to store results
     uc, c, a, D = (np.empty((params['T'] + 1, params['N_eps'], params['N_a'])) for _ in range(4))
-    # Make sure = 0 before age Tw
-    a[:params['Tw']], c[:params['Tw']], D[:params['Tw']] = 0.0, 0.0, 0.0
+    a[:params['Tw']], c[:params['Tw']], D[:params['Tw']] = 0.0, 0.0, 0.0  # Make sure = 0 before age Tw
 
     # Backward iteration to obtain policy function
     for j in reversed(range(params['Tw'], params['T']+1)):
@@ -98,5 +97,3 @@ def backward_iterate_olg(ucp, a, Pi, coh, r, beta, sigma):
 def get_coh(y_eps, r, phi, a):
     """Construct cash-on-hand."""
     return y_eps[:, np.newaxis] + (1 + r) / phi * a
-
-

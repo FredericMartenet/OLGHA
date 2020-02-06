@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import scipy.optimize as opt
 from utils import set_parameters
 from production import ss_production
