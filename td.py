@@ -6,7 +6,7 @@ from government import government
 from household import get_coh, constrained, backward_iterate_olg
 
 
-def td_olg(paths_trans, params, pi_trans, D0):
+def td_olg(paths_trans, params, pi_trans, D0, disp=False):
     """
     Compute the transitonal dynamics for a given path of the interest rate.
 
@@ -105,7 +105,7 @@ def td_olg(paths_trans, params, pi_trans, D0):
     nad = A[:Ttrans,] - K[:Ttrans,]
 
     end = time.time()
-    print(f'Total time: {end-start:.2f} sec')
+    if disp: print(f'Total time: {end-start:.2f} sec')
 
     return {
         # Paths of inputs
@@ -117,7 +117,7 @@ def td_olg(paths_trans, params, pi_trans, D0):
         # Consumption
         'C': C, 'C_j': C_j,
         # Capital
-        'K': K, 'K_L': K_L,
+        'K': K[:Ttrans,], 'K_L': K_L,
         # Errors in asset market clearing condition
         'nad': nad,
     }
@@ -127,7 +127,7 @@ def get_Jacobian(paths_trans, params, pi_trans, D0, inputs, outcomes, diff=1E-4)
     """"Computes the Jacobian matrix using numerical differentiation."""
     Ttrans = len(paths_trans[inputs[0]])  # Length of transition
     J = {o: {i: np.zeros((Ttrans,Ttrans)) for i in inputs} for o in outcomes}  # Jacobian is a nested dict
-    td = td_olg(paths_trans, params, pi_trans, D0)  # Run transition function at the given input paths
+    td = td_olg(paths_trans, params, pi_trans, D0, disp=False)  # Run transition function at the given input paths
     # For all inputs, simulate with respect to a shock at each date up to Ttrans only
     for i in inputs:
         for t in range(Ttrans):
@@ -135,7 +135,7 @@ def get_Jacobian(paths_trans, params, pi_trans, D0, inputs, outcomes, diff=1E-4)
             # Add a shock of magnitude 'diff' at horizon t
             paths_trans_diff[i] = paths_trans[i] + diff * (np.arange(Ttrans)[:,np.newaxis] == t)
             # Compute transition dynamics
-            td_out = td_olg(paths_trans_diff, params, pi_trans, D0)
+            td_out = td_olg(paths_trans_diff, params, pi_trans, D0, disp=False)
             # store results as column t of J[o][i] for each outcome o
             for o in outcomes:
                 J[o][i][:, t] = (td_out[o] - td[o]) / diff
@@ -147,7 +147,7 @@ def td_GE_olg(H_X, paths_trans, params, pi_trans, D0, outcomes, inputs, maxit=50
     """Compute general equilibrium solution using the Jacobian with Newton's method."""
     H_X_inv = np.linalg.inv(H_X)  # Invese Jacobian
     for it in range(maxit):  # Iterate until convergence
-        td_GE = td_olg(paths_trans, params, pi_trans, D0)  # Run PE transition dynamics
+        td_GE = td_olg(paths_trans, params, pi_trans, D0, disp=False)  # Run PE transition dynamics
         T = len(td_GE[inputs[0]])  # Store length of transition
         Us = {i: np.full(T, paths_trans[i].squeeze()) for i in inputs}  # Store inputs
         Uvec = pack_vectors(Us, inputs, T)  # Stack inputs into one vector

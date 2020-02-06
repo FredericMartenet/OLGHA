@@ -238,6 +238,34 @@ def var(x, pr):
     return cov(x, x, pr)
 
 
+def ineq(params, ss):
+    """Inequality statistics."""
+    T, Neps, Na = ss['a'].shape
+    a_flat = ss['a'].reshape(T, 1, Neps * Na).squeeze()  # reshape multi-dimensional policies
+    Dst_flat = ss['D'].reshape(T, 1, Neps * Na).squeeze()  # flatten out the joint distribution
+
+    # Lorenz curves
+    a = np.einsum('js,js->s', params['pi'][:, np.newaxis], a_flat)
+    p = np.einsum('js,js->s', params['pi'][:, np.newaxis], Dst_flat)
+    p = p / np.sum(p)  # Make sure sums to one
+    a_sorted = np.sort(a)  # Sort vectors from lowest to highest
+    a_sorted_i = np.argsort(a)
+    p_a_sorted = p[a_sorted_i]  # Recover associated probabilities
+    lorenz_a_pctl, lorenz_a = lorenz(a_sorted, p_a_sorted)  # Get Lorenz curves
+
+    return lorenz_a_pctl, lorenz_a
+
+
+def lorenz(x, pr):
+    """Returns Lorenz curve"""
+    # first do percentiles of the total population
+    pctl = np.concatenate(([0], pr.cumsum() - pr / 2, [1]))
+    # now do percentiles of total wealth
+    wealthshare = (x * pr / np.sum(x * pr) if np.sum(x * pr) != 0 else np.zeros_like(x))  # Returns only zeros if sum(pr*x) = 0
+    wealthpctl = np.concatenate(([0], wealthshare.cumsum() - wealthshare / 2, [1]))
+    return pctl, wealthpctl
+
+
 def find_nearest(array, value):
     array = np.asarray(array)
     return (np.abs(array - value)).argmin()
