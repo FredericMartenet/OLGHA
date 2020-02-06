@@ -1,7 +1,9 @@
-# Default ignored files
+# Ignored files
 /workspace.xml
-.idea
-.git
 __pycache__/
-.idea/
+.git
+.idea
 .ipynb_checkpoints/
+.ipynb_checkpoints/
+
+
