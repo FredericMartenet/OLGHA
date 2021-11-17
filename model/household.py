@@ -1,5 +1,5 @@
 import numpy as np
-from utils import find_nearest, interpolate_coord, forward_step, interpolate_y
+from model.utils import find_nearest, interpolate_coord, forward_step, interpolate_y
 
 
 def household_ss_olg(params, w, tau, d):

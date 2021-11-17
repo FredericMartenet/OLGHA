@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit, guvectorize
-from demographics import pop_stationary
+from model.demographics import pop_stationary
 
 """Model parameters"""
 

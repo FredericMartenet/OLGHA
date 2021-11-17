@@ -1,8 +1,8 @@
 import scipy.optimize as opt
-from utils import set_parameters
-from production import ss_production
-from government import government
-from household import household_ss_olg
+from model.utils import set_parameters
+from model.production import ss_production
+from model.government import government
+from model.household import household_ss_olg
 
 
 def ss_olg():

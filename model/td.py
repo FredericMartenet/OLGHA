@@ -1,9 +1,9 @@
 import numpy as np
 import time
-from utils import find_nearest, interpolate_coord, forward_step, make_full_path, unpack_vectors, pack_vectors
-from production import production_agg
-from government import government
-from household import get_coh, constrained, backward_iterate_olg
+from model.utils import find_nearest, interpolate_coord, forward_step, make_full_path, unpack_vectors, pack_vectors
+from model.production import production_agg
+from model.government import government
+from model.household import get_coh, constrained, backward_iterate_olg
 
 
 def td_olg(paths_trans, params, pi_trans, D0, disp=False):
