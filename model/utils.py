@@ -1,55 +1,19 @@
 import numpy as np
 from numba import njit, guvectorize
-from model.demographics import pop_stationary
 
-"""Model parameters"""
 
-def set_parameters(r=0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, Tw=20, Tr=65, T=100,  N_eps=7, N_a=200, amax=1000, n=0.02):
-    """Defines the main parameters of the model."""
+def set_parameters(r=0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, N_eps=7, N_a=200, amax=1000):
+    """
+    Defines the main parameters of the model.
+    """
     params = dict()
-
-    # MODEL AGES
-    params['Tw'] = Tw  # age at which start work
-    params['Tr'] = Tr  # Retirement
-    params['T'] = T  # last year of life for sure
-    params['jvec'] = np.arange(0, params['T'] + 1)  # age vector
-
-    # DEMOGRAPHICS
-    params['phi'] = np.array(  # phi(j) is probability of surviving from j-1 to j
-        [1., 1., 1., 1., 0.99958024, 0.99984742, 0.9998256, 0.99985417, 0.99986156, 0.99987262, 0.99988967, 0.99990342,
-         0.9999109, 0.9998889, 0.99983457, 0.99974538, 0.99963829, 0.99953787, 0.99945125, 0.99938193, 0.99933839,
-         0.99930488, 0.99926748, 0.99924242, 0.99924514, 0.99926275, 0.99929149, 0.99931654, 0.99933161, 0.99932689,
-         0.9993071, 0.99927363, 0.99923712, 0.99919915, 0.99914045, 0.99907633, 0.99900216, 0.99891874, 0.99882671,
-         0.99873562, 0.99863822, 0.99853303, 0.99841911, 0.99831145, 0.99820416, 0.99809438, 0.99798009, 0.99785222,
-         0.99772708, 0.99761754, 0.99751595, 0.99740357, 0.99726706, 0.99709373, 0.99687835, 0.99661299, 0.99630414,
-         0.99595392, 0.9955756, 0.99518221, 0.99476333, 0.99431237, 0.99381049, 0.99320721, 0.99249086, 0.99166128,
-         0.99073179, 0.98972359, 0.98867498, 0.98761743, 0.98654746, 0.98536994, 0.98405218, 0.98266914, 0.98127292,
-         0.97985243, 0.97817818, 0.97613982, 0.97395495, 0.97179702, 0.96951054, 0.96698265, 0.96399526, 0.95999319,
-         0.95463326, 0.94802055, 0.94049785, 0.93241941, 0.92402846, 0.91541236, 0.90647692, 0.89714784, 0.88752895,
-         0.87705071, 0.86563134, 0.85318403, 0.84041459, 0.8279652, 0.81597948, 0.80466526, 0.79439827])
-    params['n'] = n  # Population growth rate
-    params['pi'] = pop_stationary(n, params['phi'], T=params['T'])  # Stationary population distribution
 
     # INTEREST RATE
     params['r'] = r
 
-    # TECHNOLOGY
-    params['alpha'] = 0.33  # Capital share
-    params['delta'] = 0.06  # Depreciation rate
-
     # PREFERENCES
     params['sigma'] = sigma  # Inverse elasticity of substitution
     params['beta'] = beta  # Subjective discount factor
-
-    # LABOR SUPPLY PROFILE
-    params['h'] = np.zeros((params['T']+1))
-    params['h'][Tw:Tr] = -3 + 50 * params['jvec'][Tw:Tr] - 0.5 * params['jvec'][Tw:Tr] ** 2
-    params['h'] = params['h'] / np.sum(params['pi'] * params['h'])
-
-    # MASS OF RETIREES AND WORKERS
-    iret = 1 * (params['jvec'] >= params['Tr'])
-    params['retirees'] = np.sum(params['pi'] * iret)
-    params['workers'] = np.sum(params['pi'] * params['h'] * (1-iret))
 
     # IDIOSYNCRATIC PRODUCTIVITY
     params['rho_eps'] = 0.5
@@ -66,12 +30,6 @@ def set_parameters(r=0.05, beta=0.94, sigma=2.0, sigma_eps=0.5, Tw=20, Tr=65, T=
     return params
 
 
-"""
-Fast linear interpolation for two ordered vectors of similar length; also iterates forward on 
-distribution using linearized rule. uses decorator @jit from numba to speed things up.
-"""
-
-# Numba's guvectorize decorator compiles functions and allows them to be broadcast by NumPy when dimensions differ.
 @guvectorize(['void(float64[:], float64[:], float64[:], float64[:])'], '(n),(nq),(n)->(nq)')
 def interpolate_y(x, xq, y, yq):
     """
@@ -144,7 +102,6 @@ def interpolate_coord(x, xq, xqi, xqpi):
         xqi[xqi_cur] = xi
 
 
-
 @njit(fastmath=True)
 def forward_step(D, Pi_T, a_pol_i, a_pol_pi):
     """
@@ -184,8 +141,6 @@ def forward_step(D, Pi_T, a_pol_i, a_pol_pi):
 
     return Dnew
 
-
-"""Various helper functions"""
 
 def markov_rouwenhorst(rho, sigma, N=7):
     """
@@ -239,15 +194,17 @@ def var(x, pr):
     return cov(x, x, pr)
 
 
-def ineq(params, ss):
-    """Inequality statistics."""
+def ineq(ss, pop):
+    """
+    Inequality statistics.
+    """
     T, Neps, Na = ss['a'].shape
     a_flat = ss['a'].reshape(T, 1, Neps * Na).squeeze()  # reshape multi-dimensional policies
     Dst_flat = ss['D'].reshape(T, 1, Neps * Na).squeeze()  # flatten out the joint distribution
 
     # Lorenz curves
-    a = np.einsum('js,js->s', params['pi'][:, np.newaxis], a_flat)
-    p = np.einsum('js,js->s', params['pi'][:, np.newaxis], Dst_flat)
+    a = np.einsum('js,js->s', pop.pi[:, np.newaxis], a_flat)
+    p = np.einsum('js,js->s', pop.pi[:, np.newaxis], Dst_flat)
     p = p / np.sum(p)  # Make sure sums to one
     a_sorted = np.sort(a)  # Sort vectors from lowest to highest
     a_sorted_i = np.argsort(a)
@@ -258,11 +215,13 @@ def ineq(params, ss):
 
 
 def lorenz(x, pr):
-    """Returns Lorenz curve"""
+    """
+    Returns Lorenz curve.
+    """
     # first do percentiles of the total population
     pctl = np.concatenate(([0], pr.cumsum() - pr / 2, [1]))
-    # now do percentiles of total wealth
-    wealthshare = (x * pr / np.sum(x * pr) if np.sum(x * pr) != 0 else np.zeros_like(x))  # Returns only zeros if sum(pr*x) = 0
+    # now do percentiles of total wealth (returns only zeros if sum(pr*x) = 0)
+    wealthshare = (x * pr / np.sum(x * pr) if np.sum(x * pr) != 0 else np.zeros_like(x))
     wealthpctl = np.concatenate(([0], wealthshare.cumsum() - wealthshare / 2, [1]))
     return pctl, wealthpctl
 
@@ -285,7 +244,9 @@ def agrid(amax, N, amin=0):
 
 @njit
 def within_tolerance(x1, x2, tol):
-    """Efficiently test max(abs(x1-x2)) <= tol for arrays of same dimensions x1, x2."""
+    """
+    Efficiently test max(abs(x1-x2)) <= tol for arrays of same dimensions x1, x2.
+    """
     y1 = x1.ravel()
     y2 = x2.ravel()
     for i in range(y1.shape[0]):
@@ -295,7 +256,9 @@ def within_tolerance(x1, x2, tol):
 
 
 def stationary(Pi, pi_seed=None, tol=1E-11, maxit=10_000):
-    """Find invariant distribution of a Markov chain by iteration."""
+    """
+    Find invariant distribution of a Markov chain by iteration.
+    """
     if pi_seed is None:
         pi = np.ones(Pi.shape[0]) / Pi.shape[0]
     else:
@@ -314,7 +277,9 @@ def stationary(Pi, pi_seed=None, tol=1E-11, maxit=10_000):
 
 
 def make_path(x, T):
-    """Takes in x as either a number, a vector or a matrix, turning it into a path."""
+    """
+    Takes in x as either a number, a vector or a matrix, turning it into a path.
+    """
     x = np.asarray(x)
     if x.ndim <= 1:
         return np.tile(x, (T, 1))
@@ -324,7 +289,9 @@ def make_path(x, T):
 
 
 def make_full_path(x, T):
-    """Takes a path x (vector/matrix), and repeats the last line until x has T lines."""
+    """
+    Takes a path x (vector/matrix), and repeats the last line until x has T lines.
+    """
     if x.ndim == 1:
         raise ValueError('x must be a column vector')
 
@@ -335,20 +302,24 @@ def make_full_path(x, T):
 
 
 def pack_jacobians(jacdict, inputs, outputs, T):
-    """If we have T*T jacobians from nI inputs to nO outputs in jacdict, combine into (nO*T)*(nI*T) jacobian matrix."""
+    """
+    If we have T*T jacobians from nI inputs to nO outputs in jacdict, combine into (nO*T)*(nI*T) jacobian matrix.
+    """
     nI, nO = len(inputs), len(outputs)
 
     outjac = np.empty((nO * T, nI * T))
     for iO in range(nO):
         subdict = jacdict.get(outputs[iO], {})
         for iI in range(nI):
-            outjac[(T * iO):(T * (iO + 1)), (T * iI):(T * (iI + 1))] = make_matrix(subdict.get(inputs[iI],
-                                                                                               np.zeros((T, T))), T)
+            outjac[(T * iO):(T * (iO + 1)), (T * iI):(T * (iI + 1))] = make_matrix(
+                subdict.get(inputs[iI], np.zeros((T, T))), T)
     return outjac
 
 
 def unpack_jacobians(bigjac, inputs, outputs, T):
-    """If we have an (nO*T)*(nI*T) jacobian and provide names of nO outputs and nI inputs, output nested dictionary"""
+    """
+    If we have an (nO*T)*(nI*T) jacobian and provide names of nO outputs and nI inputs, output nested dictionary
+    """
     nI, nO = len(inputs), len(outputs)
 
     jacdict = {}
@@ -360,8 +331,10 @@ def unpack_jacobians(bigjac, inputs, outputs, T):
 
 
 def make_matrix(A, T):
-    """If A is not an outright ndarray, e.g. it is SimpleSparse, call its .matrix(T) method
-    to convert it to T*T array."""
+    """
+    If A is not an outright ndarray, e.g. it is SimpleSparse, call its .matrix(T) method
+    to convert it to T*T array.
+    """
     if not isinstance(A, np.ndarray):
         return A.matrix(T)
     else:

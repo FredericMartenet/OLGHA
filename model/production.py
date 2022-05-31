@@ -1,31 +1,60 @@
-def f(k, l, alpha):
-    """Production function (eta=1 for Cobb Douglas otherwise CES). Zstar must imply Y=1 in steady-state."""
-    return k ** alpha * l ** (1 - alpha)
+"""
+Main routine for production side of the economy.
+"""
 
 
-def fk(k, alpha, l=1.0):
-    """Returns marginal product of capital."""
-    return alpha * f(k, l, alpha) / k
+class Production:
+    """
+    Production parameters and functions.
 
+    Parameters
+    ----------
+    alpha: float
+        Capital share
+    delta: float
+        Depreciation rate
+    """
 
-def fk_inv(fk, alpha):
-    """Inverse marginal product: returns capital-labor ratio compatible with given fk."""
-    return (alpha / fk) ** (1 / (1 - alpha))
+    def __init__(self, alpha=.33, delta=.06):
+        self.alpha = alpha
+        self.delta = delta
 
+    def f(self, k, l=1.0):
+        """
+        Production function.
+        """
+        return k ** self.alpha * l ** (1 - self.alpha)
 
-def fl(koverl, alpha):
-    """Return marginal product of labor at given K/L ratio."""
-    return (1 - alpha) * koverl ** alpha
+    def fk(self, k, l=1.0):
+        """
+        Marginal product of capital.
+        """
+        return self.alpha * self.f(k, l) / k
 
+    def fk_inv(self, fk):
+        """
+        Inverse marginal product: returns capital-labor ratio compatible with given fk.
+        """
+        return (self.alpha / fk) ** (1 / (1 - self.alpha))
 
-def ss_production(r, alpha, delta):
-    K_L = (alpha / (r + delta)) ** (1 / (1 - alpha))
-    w = fl(K_L, alpha)
-    return w, K_L
+    def fl(self, koverl):
+        """
+        Return marginal product of labor at given K/L ratio.
+        """
+        return (1 - self.alpha) * koverl ** self.alpha
 
+    def ss(self, r):
+        """
+        Returns steady-state capital-labor ratio (K/l) and wage wate (w).
+        """
+        kl = (self.alpha / (r + self.delta)) ** (1 / (1 - self.alpha))
+        w = self.fl(kl)
+        return w, kl
 
-def production_agg(alpha, r, delta):
-    """Calculates various aggregates from a given interest rate and technological parameters."""
-    K_L = fk_inv(r + delta, alpha)  # Calculate capital-labor ratio at this r
-    w = fl(K_L, alpha)  # Calculate real wage at this capital-labor ratio
-    return w, K_L
+    def agg(self, r):
+        """
+        Calculates K/L ratio and wage rate from a given interest rate and technological parameters.
+        """
+        kl = self.fk_inv(r + self.delta)
+        w = self.fl(kl)
+        return w, kl
