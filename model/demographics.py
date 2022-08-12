@@ -37,7 +37,7 @@ class Population:
 
         # Survival probabilities rates: phi(j) is probability of surviving from j-1 to j
         if not phi:
-            self.phi = np.array([
+            phi = np.array([
                 1., 1., 1., 1., 0.99958024, 0.99984742, 0.9998256, 0.99985417, 0.99986156,
                 0.99987262, 0.99988967, 0.99990342, 0.9999109, 0.9998889, 0.99983457, 0.99974538,
                 0.99963829, 0.99953787, 0.99945125, 0.99938193, 0.99933839, 0.99930488, 0.99926748,
@@ -54,6 +54,7 @@ class Population:
                 0.87705071, 0.86563134, 0.85318403, 0.84041459, 0.8279652, 0.81597948, 0.80466526,
                 0.79439827
             ])
+            self.phi = phi[:T+1]
 
         # Cumulative survival probabilities
         self.Phi = np.cumprod(np.append(1, self.phi[:-1]))
